@@ -35,6 +35,7 @@ def main():
         p["price"] = e["now_cost"] / 10
         p["own"] = float(e["selected_by_percent"])
         p["status"] = e["status"]
+        p["team"] = e["team"]
         p["news"] = (e.get("news") or "")[:90]
         p["chance"] = e.get("chance_of_playing_next_round")
         p["form"] = e.get("form")
