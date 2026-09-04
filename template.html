@@ -473,10 +473,10 @@
   <div class="panel" id="p-elite">
     <section class="block">
       <h2>Elite Managers</h2>
-      <div class="desc" style="border-left:3px solid var(--warning);padding-left:10px;">
-        <b>Why there are no live squads here yet.</b> FPL re-issues every manager's team ID from scratch each season, handed out in the order squads are submitted — so every elite manager's ID published before 23 July 2026 now resolves to a <i>different, random person</i>. No 2026/27 IDs have been published by anyone yet; the community articles carrying them appear after GW1. Loading a stale ID would silently show you the wrong squad, which is worse than showing nothing.
-        <br><br><b>What unlocks and when.</b> From roughly 23 August, the global &ldquo;Overall&rdquo; league (id 314) exposes the current world top managers with their live IDs, and Fantasy Football Scout republishes its elite roster. Claude will pull the top squads in then, verifying each ID against the manager's name before trusting it. Until that point, the two tables below are the real, verified history.
-      </div>
+      <div class="desc">The 20 best FPL managers of all time (LiveFPL all-time index), identity-verified against the API. Below: their actual current squads, refreshed after every deadline.</div>
+      <div id="elite-consensus" class="desc" style="border-left:3px solid var(--accent);padding-left:10px;margin-top:8px;"></div>
+      <h2 style="margin-top:16px;">Top-20 all-time — their current squads (GW2)</h2>
+      <div id="elite-squads"></div>
     </section>
     <div class="two-col">
       <section class="block">
@@ -1503,6 +1503,50 @@ const WATCHLIST=[
   };
   const groups=[['DEF','Defenders (12)'],['MID','Midfielders (12)'],['FWD','Forwards (6)']];
   document.getElementById('wl-mine').innerHTML=groups.map(([pos,label])=>'<h3 style="margin:14px 0 6px;color:var(--accent);">'+label+'</h3>'+WATCHLIST.filter(w=>w.pos==pos).map(w=>row(w.id,w.note)).join('')).join('');
+})();
+/* ================= ELITE SQUADS (verified via LiveFPL ids) ================= */
+const ELITE_SQUADS=[
+ {rank:1,name:"-Calm -",entry:47394,chip:null,bank:0,picks:"529,8,4,418,426C,427,557,366,346,379V,165,109,542,532,115"},
+ {rank:2,name:"Ben Crellin",entry:53517,chip:null,bank:0,picks:"1,418,112,8,368,427,426C,154V,379,346,165,564,124,152,304"},
+ {rank:3,name:"Mark Hurst",entry:35543,chip:"bboost",bank:0,picks:"496,8,173,423,426C,427,557,542,368,165,411V,109,346,175,329"},
+ {rank:4,name:"Mark Brookes",entry:616,chip:null,bank:0,picks:"412,418,4V,8,368,426C,237,154,379,346,165,109,112,124,304"},
+ {rank:5,name:"Michael Giovanni",entry:16499,chip:null,bank:0,picks:"496,8,418,329,426C,427,368,557,411V,165,346,109,127,87,304"},
+ {rank:6,name:"Torkel Wahl-Olsen",entry:18203,chip:null,bank:0,picks:"496,8,418,10,542,426C,557,368,346,411V,165,109,237,87,305"},
+ {rank:7,name:"Abinav C",entry:806,chip:null,bank:0,picks:"496,534,418,8,427,368,426C,237,346,411V,165,109,124,329,305"},
+ {rank:8,name:"Tom N",entry:25452,chip:null,bank:0,picks:"529,418,8,10,366,426C,368V,427,557,379,165,109,532,552,229"},
+ {rank:9,name:"Mark Lynch",entry:6098,chip:null,bank:0,picks:"1,4,229,418,427,426C,237,368,154V,346,165,564,295,304,469"},
+ {rank:10,name:"Markku Ojala",entry:881,chip:null,bank:0,picks:"529,418,4,10,8,427V,426C,368,346,165,379,109,542,532,237"},
+ {rank:11,name:"Simon MacNair",entry:515217,chip:null,bank:0,picks:"412,391,418,4,173,426C,368,481,411V,165,346,497,124,290,259"},
+ {rank:12,name:"Pro -",entry:2086,chip:null,bank:0,picks:"1,4,229,418,426C,154V,427,368,237,165,346,564,295,304,469"},
+ {rank:13,name:"Dan Howes",entry:82578,chip:null,bank:0,picks:"496,423,8,10,557,426C,397,237,346,411V,165,109,127,304,473"},
+ {rank:14,name:"Tom Dollimore",entry:179777,chip:null,bank:0,picks:"1,4,418,229,154V,426C,237,427,368,346,165,564,295,469,304"},
+ {rank:15,name:"Uz Ray",entry:485455,chip:null,bank:0,picks:"529,8,10,4,427,237,426C,368V,165,346,379,109,418,532,542"},
+ {rank:16,name:"Jesper Øiestad",entry:1690,chip:null,bank:0,picks:"529,10,8,418,426C,154V,427,368,106,165,346,109,237,11,532"},
+ {rank:17,name:"Ben Alexander",entry:480091,chip:null,bank:0,picks:"1,4,418,10,542,426C,427,368,346,379V,165,109,532,124,469"},
+ {rank:18,name:"Nick Purdon",entry:339434,chip:null,bank:0,picks:"1,356,4,418,366,426C,368,237,427V,165,346,564,295,8,469"},
+ {rank:19,name:"Cameron Scott",entry:9267,chip:null,bank:0,picks:"1,4,418,112,154,368V,426C,366,237,346,165,412,295,229,304"},
+ {rank:20,name:"Paul Marshman",entry:1826,chip:null,bank:0,picks:"496,418,87,8,427,237,426C,368,346,165,411V,109,532,127,304"}];
+(function renderEliteSquads(){
+  const P=id=>DATA.players.find(p=>p.id==id);
+  const myIds=new Set(SQUAD.map(s=>s.id));
+  const own={},caps={},chips={bboost:0,none:0};
+  const parse=s=>s.split(',').map(t=>{const cap=/C/.test(t),vice=/V/.test(t);return {id:+t.replace(/[CV]/g,''),cap,vice};});
+  let h='';
+  for(const m of ELITE_SQUADS){
+    const pk=parse(m.picks);
+    pk.forEach((x,i)=>{own[x.id]=(own[x.id]||0)+1; if(x.cap)caps[x.id]=(caps[x.id]||0)+1;});
+    m.chip=='bboost'?chips.bboost++:chips.none++;
+    const xi=pk.slice(0,11),bench=pk.slice(11);
+    const cell=x=>{const p=P(x.id);const name=p?p.name:('#'+x.id);const mineMark=myIds.has(x.id)?' style="color:var(--accent)"':'';return '<span'+mineMark+'>'+name+(x.cap?' (C)':'')+(x.vice?' (V)':'')+'</span>';};
+    h+='<div class="desc" style="margin-bottom:10px;"><b>#'+m.rank+' '+m.name+'</b> <span style="opacity:.6">entry '+m.entry+(m.chip?' · '+m.chip.toUpperCase():' · no chip')+'</span><br>'+xi.map(cell).join(' · ')+'<br><span style="opacity:.6">bench:</span> '+bench.map(cell).join(' · ')+'</div>';
+  }
+  document.getElementById('elite-squads').innerHTML=h;
+  const top=Object.entries(own).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const capTop=Object.entries(caps).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const nm=id=>{const p=P(+id);return p?p.name:('#'+id);};
+  document.getElementById('elite-consensus').innerHTML=
+   '<b>Elite consensus (of 20):</b> '+top.map(([id,n])=>nm(id)+' '+n+'/20'+(myIds.has(+id)?' ✓':'')).join(' · ')+
+   '<br><b>Captains:</b> '+capTop.map(([id,n])=>nm(id)+' '+n+'/20').join(' · ')+' · <b>Chips this week:</b> '+chips.bboost+'/20';
 })();
 document.getElementById('foot').innerHTML =
   `Data: official FPL API (prices, ownership, flags, deadlines) + Elo ratings via FPL-Elo-Insights + 2025/26 season totals via vaastav/FPL. DefCon: 25/26 per-match defensive actions from vaastav/FPL merged gameweek data (thresholds verified against premierleague.com official). Championship per-90 for promoted clubs via premierleague.com and Fantasy Football Scout. Difficulty is an Elo model (opponent Elo ± home advantage, scaled 1–5 across all 240 fixtures shown), not official FDR.<br>Built by Claude for Ilan · updated ${DATA.generated} · say "refresh the FPL dashboard" anytime · DOOM FC is watching. Watch back. &#10045; By order of Red Right Haaland.<br>Elite-manager records via LiveFPL; expert records via top10k.co.uk; expert positions and quotes via Fantasy Football Scout, FPL Dashboard and Fantasy Football Fix, each linked at source.`;
