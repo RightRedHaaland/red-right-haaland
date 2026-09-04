@@ -262,6 +262,7 @@
     <button data-t="defcon">DefCon Radar</button>
     <button data-t="audition">Audition Room</button>
     <button data-t="elite">Elite Managers</button>
+    <button data-t="watch">Watchlist</button>
     <button data-t="experts">Expert Board</button>
     <button data-t="players">Player Stats</button>
     <button data-t="notes">Notes &amp; Intel</button>
@@ -572,6 +573,15 @@
         <textarea id="quicknote" placeholder="Palmer looking good from week 4 per the Wire…"></textarea><br>
         <button class="btn" id="copynote">Copy as chat message</button> <span id="copystatus" style="font-size:12px;color:var(--accent);margin-left:8px;"></span>
       </div>
+    </section>
+  </div>
+
+  <!-- ================= WATCHLIST ================= -->
+  <div class="panel" id="p-watch">
+    <section class="block">
+      <h2>The Thirty — the curated watchlist (12 DEF · 12 MID · 6 FWD)</h2>
+      <div class="desc">Players under surveillance, refreshed with the data. Weighted to process over points: xGI-vs-returns gaps, DefCon engines, minutes security.</div>
+      <div id="wl-mine"></div>
     </section>
   </div>
 
@@ -1449,6 +1459,51 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
   document.getElementById('p-'+b.dataset.t).classList.add('active');
 }));
 
+/* ================= WATCHLIST (The Thirty) ================= */
+const WATCHLIST=[
+ {id:418,pos:"DEF",note:"18/20 elite consensus at £5.0, 42% DefCon hit rate. Quiet start (5 pts) but the elites haven't moved. First name if a defender slot opens."},
+ {id:4,pos:"DEF",note:"Arsenal have conceded 0.53 xG in two games — the meanest defence in the league. Gabriel is the premium route into it. 11/20 elites."},
+ {id:10,pos:"DEF",note:"18 pts, form 9.0 — the 7/20 elites are beating my 11%-hit model. Watching who's right; two more weeks of this and the model concedes."},
+ {id:388,pos:"DEF",note:"Guéhi at City: 1.25 xGI in two games from CB, £6.0, in the predicted XI every week. Set-piece threat + City CS engine."},
+ {id:115,pos:"DEF",note:"De Cuyper £4.7: 17 pts, 1.76 xGI — an attacking wing-back priced as a bench filler. Ownership 17% and climbing fast; the price will run."},
+ {id:279,pos:"DEF",note:"Ajayi £4.1 — the top-scoring defender in the game (20 pts, form 10). Promoted-team DefCon+bonus machine. Hull concede plenty; he scores anyway."},
+ {id:277,pos:"DEF",note:"Egan £4.0 — a shrewd early punt by FC DOOM, 17 pts. On the list partly as respect, partly because two data points at 8.5/game demand it."},
+ {id:229,pos:"DEF",note:"Tarkowski — the original DefCon king (59% career hit), 18 pts. Caveat: Everton's 4.12 xGC in two games is ugly; his floor is DefCon-only."},
+ {id:532,pos:"DEF",note:"Ballard £5.0 — 63% DefCon hit last season, nailed in Sunderland's XI. The steady accumulator profile."},
+ {id:449,pos:"DEF",note:"Hall £5.1 — 0.69 xGI, Newcastle's attacking outlet at LB. Their 4.10 xGC says wait for the defence to settle before buying."},
+ {id:88,pos:"DEF",note:"Kayode £4.6 — 15 pts, 0.73 xGI, Brentford wing-back value. Enables premium spend elsewhere."},
+ {id:11,pos:"DEF",note:"Mosquera — 12 pts, starting every week while Saliba's out, in the league's best defence. Watching without regret but with honesty."},
+ {id:399,pos:"MID",note:"Cherki: 22 pts from 108 minutes, form 11.0. The most explosive per-minute asset in the game. Risk is written in the same line — 54 min/game of rotation roulette."},
+ {id:12,pos:"MID",note:"Saka: 20 pts, 1.39 xGI. The premium re-entry candidate if a big move is ever made — Arsenal's engine with their fixture profile."},
+ {id:154,pos:"MID",note:"Palmer: 20 pts. Chelsea's everything. The £9.6 price is the only argument against."},
+ {id:40,pos:"MID",note:"Rogers: 2.21 xGI vs 13 returned pts — the biggest process-vs-return gap in midfield. That gap is a buy signal."},
+ {id:367,pos:"MID",note:"Gakpo: 17 pts, 1.10 xGI at £7.1. Liverpool's most productive FPL asset early."},
+ {id:565,pos:"MID",note:"M.Sangaré £5.7: 18 pts. Budget midfield engine."},
+ {id:335,pos:"MID",note:"Stach £6.0: 17 pts on 0.23 xGI — that's not luck, it's DefCon+bonus scoring, which IS sustainable. The midfield Tarkowski."},
+ {id:481,pos:"MID",note:"Anderson (MCI £6.5): 70% DefCon hit rate last season at Forest, now the Rodri replacement. If he holds the pivot role he's the DefCon-mid sleeper of the season."},
+ {id:454,pos:"MID",note:"Elanga £6.1: 17 pts, pace-on-the-break profile. Newcastle's attack is functioning even while the defence leaks."},
+ {id:86,pos:"MID",note:"Lewis-Potter £5.5: 16 pts, 1.04 xGI, 2% owned — the differential version of the Brentford value story."},
+ {id:480,pos:"MID",note:"Gibbs-White £7.9: 1.02 xGI. Forest's creator; watch how the new signings settle around him."},
+ {id:397,pos:"MID",note:"Semenyo: still misfiring (7 pts) but in City's predicted XI. The watch continues."},
+ {id:379,pos:"FWD",note:"Isak: 2.09 xGI vs 10 pts, now playing full 90s. The most owed forward in the league."},
+ {id:464,pos:"FWD",note:"Wissa £6.1: 12 pts, 1.37 xGI. The mid-price forward benchmark."},
+ {id:249,pos:"FWD",note:"Barry (EVE £5.5): 2.02 xGI in 147 minutes — elite process at a bench-forward price. If the goals start he's this year's value forward."},
+ {id:106,pos:"FWD",note:"Thiago £8.0: 1.89 xGI, 2 returned pts, ownership fleeing, price falling. Classic buy-low setup."},
+ {id:224,pos:"FWD",note:"Nketiah £5.5: 1.54 xGI, and Mateta's hamstring makes him Palace's line-leader."},
+ {id:26,pos:"FWD",note:"Havertz — the hunch, held. Honesty: 0.34 xGI in 180 minutes is the weakest process on this list. Four weeks to show data."}];
+(function renderWatchlist(){
+  const P=id=>DATA.players.find(p=>p.id==id);
+  const DC=id=>Object.values(DATA.defcon).find(d=>d.id==id);
+  const fx3=p=>{const t=DATA.ticker[p.team];return t?t.filter(f=>f.gw>=CONFIG.currentGW).slice(0,3).map(f=>DATA.teams[f.opp].short+(f.venue=='H'?'h':'a')).join(' · '):'';};
+  const row=(id,note)=>{
+    const p=P(id); if(!p) return '';
+    const d=DC(id); const hit=d&&d.starts>=8?Math.round(d.hit*100)+'% ('+d.starts+' st)':'—';
+    const flag=p.status&&p.status!='a'?' <span style="color:var(--hard)">['+(p.news||p.status).slice(0,60)+']</span>':'';
+    return '<div class="desc" style="margin-bottom:9px;border-left:3px solid #3a2f1d;padding-left:10px;"><b>'+p.name+'</b> '+p.pos+' '+DATA.teams[p.team].short+' £'+p.price+' · owned '+p.own+'% · DefCon hit '+hit+' · next: '+fx3(p)+flag+(note?'<br><span style="opacity:.75">'+note+'</span>':'')+'</div>';
+  };
+  const groups=[['DEF','Defenders (12)'],['MID','Midfielders (12)'],['FWD','Forwards (6)']];
+  document.getElementById('wl-mine').innerHTML=groups.map(([pos,label])=>'<h3 style="margin:14px 0 6px;color:var(--accent);">'+label+'</h3>'+WATCHLIST.filter(w=>w.pos==pos).map(w=>row(w.id,w.note)).join('')).join('');
+})();
 document.getElementById('foot').innerHTML =
   `Data: official FPL API (prices, ownership, flags, deadlines) + Elo ratings via FPL-Elo-Insights + 2025/26 season totals via vaastav/FPL. DefCon: 25/26 per-match defensive actions from vaastav/FPL merged gameweek data (thresholds verified against premierleague.com official). Championship per-90 for promoted clubs via premierleague.com and Fantasy Football Scout. Difficulty is an Elo model (opponent Elo ± home advantage, scaled 1–5 across all 240 fixtures shown), not official FDR.<br>Built by Claude for Ilan · updated ${DATA.generated} · say "refresh the FPL dashboard" anytime · DOOM FC is watching. Watch back. &#10045; By order of Red Right Haaland.<br>Elite-manager records via LiveFPL; expert records via top10k.co.uk; expert positions and quotes via Fantasy Football Scout, FPL Dashboard and Fantasy Football Fix, each linked at source.`;
 </script>
